@@ -52,20 +52,3 @@ counts = Counter((is_spam, spam_probability > 0.5)
 
 print counts
 
-def p_spam_given_word(word_prob):
-	"""uses bayes's theorem to compute p(spam | message contains word)"""
-
-	# word_prob is one of the triplets provided by word_probabilities
-	word, prob_if_spam, prob_if_not_spam = word_prob
-	return prob_if_spam / (prob_if_spam + prob_if_not_spam)
-
-words = sorted(classifier.word_probs, key=p_spam_given_word)
-
-def print_words(word_probs):
-	for word, pspam, pnot_spam in word_probs:
-		print "{0} {1:.2%} {2:.2%}".format (word, pspam, pnot_spam)
-
-print "\nSPAM: "
-print_words(words[-20:])
-print "\nHAM: "
-print_words(words[:20])

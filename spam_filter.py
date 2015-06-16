@@ -1,3 +1,4 @@
+from __future__ import division
 import re
 import math
 from collections import defaultdict
@@ -16,38 +17,55 @@ def count_words(training_set):
 	return counts
 
 
-def word_probabilities(counts, total_spams, total_non_spams, k, min_count):
-	"""turn word counts into a list of triplets
-	w, p(w | spam), p(w | ~spam)"""
-	return [(w,
-		(spam + k) / (total_spams + 2 * k),
-		(non_spam + k) / (total_non_spams + 2 * k))
-		for w, (spam, non_spam) in counts.iteritems() if spam + non_spam > min_count]
+def word_probabilities(counts, total_spams, total_non_spams, min_count):
+	"""turn word counts into a dictionary of words to spam probabilities"""
+
+	words = {}
+	for w, (spam, non_spam) in counts.iteritems():
+		if spam + non_spam >= min_count: 
+			g = min(1, 2 * non_spam / total_non_spams)
+			b = min(1, spam / total_spams)
+			words[w] = max(0.01, min(0.99, b / (b + g)))
+	return words
 
 
 def spam_probability(word_probs, message):
 	message_words = tokenize(message)
 	log_prob_if_spam = log_prob_if_not_spam = 0.0
 	
-	#iterate through words in our vocabulary
-	for word, prob_if_spam, prob_if_not_spam in word_probs:
-		#if word is in the message, add log prob of seeing it
-		# if word isn't in the message, add log prob of NOT seeing it
-		# which is log(1-probability of seeing it)
+	message_probs = []
+	for word in message_words:
+		if word in word_probs:
+			message_probs.append(word_probs[word]) 
+	notable_probs = most_extreme(message_probs)
 
-		if word in message_words:
-			log_prob_if_spam += math.log(prob_if_spam)
-			log_prob_if_not_spam += math.log(prob_if_not_spam)
-		else:
-			log_prob_if_spam += math.log(1.0 - prob_if_spam)
-			log_prob_if_not_spam += math.log(1.0 - prob_if_not_spam)
-	prob_if_spam = math.exp(log_prob_if_spam)
-	prob_if_not_spam = math.exp(log_prob_if_not_spam)
-	return prob_if_spam / (prob_if_spam + prob_if_not_spam)
+	inverse_probs = [1-prob for prob in notable_probs]
+	prob_product = reduce(lambda prob, acc: prob * acc, notable_probs)
+	inverse_prob_product = reduce(lambda prob, acc: prob * acc, inverse_probs)
+	return prob_product / (prob_product + inverse_prob_product)
+
+def most_extreme(probabilities, n=15):
+	if len(probabilities) <= n:
+		return probabilities 
+
+	probabilities.sort()
+	hammiest_probs = probabilities[:n]
+	spammiest_probs = probabilities[-n:]
+	hammiest_probs.reverse()
+
+	while len(spammiest_probs) + len(hammiest_probs) > n:
+		if extremeness(hammiest_probs[0]) > extremeness(spammiest_probs[0]):
+			spammiest_probs.pop(0)
+		else:	
+			hammiest_probs.pop(0)
+
+	return spammiest_probs + hammiest_probs
+
+def extremeness(probability):
+	return abs(0.5 - probability)
 
 class NaiveBayesClassifier:
-	def __init__(self, k=0.5, min_count=0):
-		self.k = k
+	def __init__(self, min_count=0):
 		self.word_probs = []
 		self.min_count = min_count
 	
@@ -61,7 +79,7 @@ class NaiveBayesClassifier:
 
 		# run training data through our pipeline
 		word_counts = count_words(training_set)
-		self.word_probs = word_probabilities(word_counts, num_spams, num_non_spams, self.k, self.min_count)
+		self.word_probs = word_probabilities(word_counts, num_spams, num_non_spams, self.min_count)
 	
 	def classify(self, message):
 		return spam_probability(self.word_probs, message)
