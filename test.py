@@ -26,10 +26,10 @@ for fn in glob.glob(path):
 				subject = re.sub(r"^Subject: ", "", line).strip()
 				data.append((subject, is_spam))
 
-random.seed(0)
+random.seed()
 train_data, test_data = split_data(data, 0.75)
 
-classifier = NaiveBayesClassifier()
+classifier = NaiveBayesClassifier(min_count = 2)
 classifier.train(train_data)
 
 # triplets (subject, actual_is_spam, predicted spam probability)
@@ -44,11 +44,20 @@ counts = Counter((is_spam, spam_probability > 0.5)
 
 print counts
 
-# sort by spam_probability from smallest to largest
-classified.sort(key=lambda row: row[2])
-#print classified[-5:]
-#highest predicted spam probs among the non-spams
-spammiest_hams = filter(lambda row: not row[1], classified)[-5:]
-hammiest_spams = filter(lambda row: row[1], classified)[:5]
+def p_spam_given_word(word_prob):
+	"""uses bayes's theorem to compute p(spam | message contains word)"""
 
+	# word_prob is one of the triplets provided by word_probabilities
+	word, prob_if_spam, prob_if_not_spam = word_prob
+	return prob_if_spam / (prob_if_spam + prob_if_not_spam)
 
+words = sorted(classifier.word_probs, key=p_spam_given_word)
+
+def print_words(word_probs):
+	for word, pspam, pnot_spam in word_probs:
+		print "{0} {1:.2%} {2:.2%}".format (word, pspam, pnot_spam)
+
+print "\nSPAM: "
+print_words(words[-20:])
+print "\nHAM: "
+print_words(words[:20])

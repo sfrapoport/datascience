@@ -16,13 +16,13 @@ def count_words(training_set):
 	return counts
 
 
-def word_probabilities(counts, total_spams, total_non_spams, k=0.5):
+def word_probabilities(counts, total_spams, total_non_spams, k, min_count):
 	"""turn word counts into a list of triplets
 	w, p(w | spam), p(w | ~spam)"""
 	return [(w,
 		(spam + k) / (total_spams + 2 * k),
 		(non_spam + k) / (total_non_spams + 2 * k))
-		for w, (spam, non_spam) in counts.iteritems()]
+		for w, (spam, non_spam) in counts.iteritems() if spam + non_spam > min_count]
 
 
 def spam_probability(word_probs, message):
@@ -46,9 +46,10 @@ def spam_probability(word_probs, message):
 	return prob_if_spam / (prob_if_spam + prob_if_not_spam)
 
 class NaiveBayesClassifier:
-	def __init__(self, k=0.5):
+	def __init__(self, k=0.5, min_count=0):
 		self.k = k
 		self.word_probs = []
+		self.min_count = min_count
 	
 	def train(self, training_set):
 
@@ -60,7 +61,7 @@ class NaiveBayesClassifier:
 
 		# run training data through our pipeline
 		word_counts = count_words(training_set)
-		self.word_probs = word_probabilities(word_counts, num_spams, num_non_spams, self.k)
+		self.word_probs = word_probabilities(word_counts, num_spams, num_non_spams, self.k, self.min_count)
 	
 	def classify(self, message):
 		return spam_probability(self.word_probs, message)
