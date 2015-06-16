@@ -20,13 +20,21 @@ for fn in glob.glob(path):
 	is_spam = "ham" not in fn
 
 	with open(fn, 'r') as file:
+		in_header = True
+		file_contents =''
 		for line in file:
-			if line.startswith("Subject:"):
-				#remove leading subject and keep remainder
-				subject = re.sub(r"^Subject: ", "", line).strip()
-				data.append((subject, is_spam))
+			if in_header: 
+				if line.startswith("Subject:"):
+					#remove leading subject and keep remainder
+					subject = re.sub(r"^Subject: ", "", line).strip()
+					file_contents += subject
+				if not line.strip():
+					in_header = False
+			else: 
+				file_contents += line.strip()
+		data.append((file_contents, is_spam))
 
-random.seed()
+	
 train_data, test_data = split_data(data, 0.75)
 
 classifier = NaiveBayesClassifier(min_count = 2)
