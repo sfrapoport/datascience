@@ -1,5 +1,6 @@
 from __future__ import division
-from collections import defaultdict
+from collections import defaultdict, Counter
+from functools import partial
 import math
 
 def entropy(class_probabilities):
@@ -36,7 +37,7 @@ def partition_by(inputs, attribute):
 		groups[key].append(input)  # then add this input to the correct list
 	return groups
 
-def partition_entropy(inputs, attribute):
+def partition_entropy_by(inputs, attribute):
 	"""returns the entropy of partitioning the inputs by the specified attribute"""
 	partitions = partition_by(inputs, attribute)
 	return partition_entropy(partitions.values())
@@ -62,6 +63,37 @@ def classify(tree, input):
 	return classify(subtree, input)		# and use it to classify the input
 
 
+def build_tree_id3(inputs, split_candidates=None):
+	# if this is our first pass,
+	# all keys of the first input are split candidates
+	if split_candidates is None:
+		split_candidates = inputs[0][0].keys()
+	# count trues and false in the inputs
+	num_inputs = len(inputs)
+	num_trues = len([label for item, label in inputs if label])
+	num_falses = num_inputs - num_trues
+
+	if num_trues == 0: return False # no Trues? return a "false" leaf
+	if num_falses == 0: return True # no Falses? return a "true" leaf
+
+	if not split_candidates:	# if no split candidates left
+		return num_trues >= num_falses	#return the majority leaf
+
+	# otherwise split on the best attribute
+	best_attribute = min(split_candidates,
+			key=partial(partition_entropy_by, inputs))
+
+	partitions = partition_by(inputs, best_attribute)
+	new_candidates = [a for a in split_candidates
+			if a!= best_attribute]
+
+	# recursively build the subtrees
+	subtrees = {attribute_value : build_tree_id3(subset, new_candidates)
+			for attribute_value, subset in partitions.iteritems() }
+
+	subtrees[None] = num_trues > num_falses	# default case
+	print subtrees
+	return (best_attribute, subtrees)
 
 
 inputs = [
@@ -81,3 +113,11 @@ inputs = [
         ({'level':'Junior','lang':'Python','tweets':'no','phd':'yes'},False)
     ]
 
+tree = build_tree_id3(inputs)
+
+'''
+print classify(tree, {"level" :"Junior", "lang" : "Java" , "tweets": "yes" , "phd": "no"})
+print classify(tree, {"level" :"Junior", "lang" : "Java" , "tweets": "yes" , "phd": "yes"})
+
+print classify(tree, {"level": "Intern"} ) 
+print classify(tree, {"level": "Senior"} ) '''
