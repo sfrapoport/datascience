@@ -121,3 +121,10 @@ print classify(tree, {"level" :"Junior", "lang" : "Java" , "tweets": "yes" , "ph
 
 print classify(tree, {"level": "Intern"} ) 
 print classify(tree, {"level": "Senior"} ) '''
+
+def forest_classify(trees, input):
+	votes = [classify(tree, input) for tree in trees]
+	vote_countes = Counter(votes)
+	return vote_counts.most_common(1)[0][0]
+
+
