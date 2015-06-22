@@ -25,12 +25,12 @@ class KMeans:
 
             # If no assignments changed, DONE
             if assignments == new_assignments:
-                primarycolors = [(1,0,0), (0,1,0), (0,0,1)]
-                colors = [primarycolors[i] for i in assignments] 
-                x = [pair[0] for pair in inputs]
-                y = [pair[1] for pair in inputs]
-                plt.scatter(x, y, c=colors)
-                plt.show()
+                # primarycolors = [(1,0,0), (0,1,0), (0,0,1)]
+                # colors = [primarycolors[i] for i in assignments] 
+                # x = [pair[0] for pair in inputs]
+                # y = [pair[1] for pair in inputs]
+                # plt.scatter(x, y, c=colors)
+                # plt.show()
                 return
 
             # Else keep new assignment
@@ -45,25 +45,56 @@ class KMeans:
                 if i_points:
                     self.means[i] = vector_mean(i_points)
 
-if __name__ == "__main__":
+def squared_clustering_errors(inputs, k):
+    """sums the squares of the errors for clustering with k means"""
+    kmeans = KMeans(k)
+    kmeans.train(inputs)
+    means = kmeans.means
+    assignments = map(kmeans.classify, inputs)
 
-    inputs = [[-14,-5],[13,13],[20,23],[-19,-11],[-9,-16],[21,27],[-49,15],[26,13],[-46,5],[-34,-1],[11,15],[-49,0],[-22,-16],[19,28],[-12,-8],[-13,-19],[-41,8],[-11,-6],[-25,-9],[-18,-3]]
+    return sum(squared_distance(input, means[cluster]) for input, cluster in zip(inputs, assignments))
 
-    random.seed(0) # so you get the same results as me
-    clusterer = KMeans(3)
-    clusterer.train(inputs)
-    print "3-means:"
-    print clusterer.means
-    print
+# if __name__ == "__main__":
+
+    # inputs = [[-14,-5],[13,13],[20,23],[-19,-11],[-9,-16],[21,27],[-49,15],[26,13],[-46,5],[-34,-1],[11,15],[-49,0],[-22,-16],[19,28],[-12,-8],[-13,-19],[-41,8],[-11,-6],[-25,-9],[-18,-3]]
+
+    # random.seed(0) # so you get the same results as me
+    # clusterer = KMeans(3)
+    # clusterer.train(inputs)
+    # print "3-means:"
+    # print clusterer.means
+    # print
     
-    random.seed(0)
-    clusterer = KMeans(2)
-    clusterer.train(inputs)
-    print "2-means:"
-    print clusterer.means
-    print
+    # random.seed(0)
+    # clusterer = KMeans(2)
+    # clusterer.train(inputs)
+    # print "2-means:"
+    # print clusterer.means
+    # print
 
-    import numpy as np
-    import matplotlib.pyplot as plt
+    # ks = range(1, len(inputs) + 1)
+    # errors = [squared_clustering_errors(inputs, k) for k in ks]
 
+    # plt.plot(ks, errors)
+    # plt.xticks(ks)
+    # plt.xlabel("k")
+    # plt.ylabel("total squared error")
+    # plt.title("Total Error vs. # of Clusters")
+    # plt.show()
     
+path_to_png_file = "./image.png"
+import matplotlib.image as mpimg
+img = mpimg.imread(path_to_png_file)
+pixels = [pixel for row in img for pixel in row]
+clusterer = KMeans(5)
+clusterer.train(pixels)
+
+def recolor(pixel):
+    cluster = clusterer.classify(pixel)
+    return clusterer.means[cluster]
+
+new_image = [[recolor(pixel) for pixel in row] for row in img]
+
+plt.imshow(new_image)
+plt.axis('off')
+plt.show()
