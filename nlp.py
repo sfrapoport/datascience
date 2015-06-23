@@ -5,23 +5,23 @@ from collections import defaultdict
 def fix_unicode(text):
 	return text.replace(u"\u2019", "'")
 
-url = "http://radar.oreilly.com/ideas/what-is-data-science"
-html = requests.get(url).text
-soup = BeautifulSoup(html, 'html5lib')
+# url = "http://radar.oreilly.com/ideas/what-is-data-science"
+# html = requests.get(url).text
+# soup = BeautifulSoup(html, 'html5lib')
 
-content = soup.find("div", "article-body")
-regex = r"[\w']+|[\.]"
+# content = soup.find("div", "article-body")
+# regex = r"[\w']+|[\.]"
 
-document = []
+# document = []
 
-for paragraph in content("p"):
-	words = re.findall(regex, fix_unicode(paragraph.text))
-	document.extend(words)
+# for paragraph in content("p"):
+# 	words = re.findall(regex, fix_unicode(paragraph.text))
+# 	document.extend(words)
 
-bigrams = zip(document, document[1:])
-transitions = defaultdict(list)
-for prev, current in bigrams:
-	transitions[prev].append(current)
+# bigrams = zip(document, document[1:])
+# transitions = defaultdict(list)
+# for prev, current in bigrams:
+# 	transitions[prev].append(current)
 
 def generate_using_bigrams():
 	current = "."
@@ -32,15 +32,15 @@ def generate_using_bigrams():
 		result.append(current)
 		if current == ".": return " ".join(result)
 
-trigrams = zip(document, document[1:], document[2:])
-trigram_transitions = defaultdict(list)
-starts = []
+# trigrams = zip(document, document[1:], document[2:])
+# trigram_transitions = defaultdict(list)
+# starts = []
 
-for prev, current, next in trigrams:
-	if prev == ".":
-		starts.append(current)
+# for prev, current, next in trigrams:
+# 	if prev == ".":
+# 		starts.append(current)
 
-	trigram_transitions[(prev, current)].append(next)
+# 	trigram_transitions[(prev, current)].append(next)
 
 def generate_using_trigrams():
 	current = random.choice(starts)
@@ -63,10 +63,10 @@ grammar = {
             "_A _NP _P _A _N"],
         "_VP" : ["_V", 
             "_V _NP"],
-        "_N" : ["data science", "Python", "regression"],
-        "_A" : ["big", "linear", "logistic"],
+        "_N" : ["data science", "Python", "regression", "buffalo"],
+        "_A" : ["big", "linear", "logistic", "Buffalo"],
         "_P" : ["about", "near"],
-        "_V" : ["learns", "trains", "tests", "is"]
+        "_V" : ["learns", "trains", "tests", "is", "buffalo"]
         }
 
 def is_terminal(token):
@@ -87,7 +87,7 @@ def expand(grammar, tokens):
     return tokens
 
 def generate_sentence(grammar):
-    return expand(grammar, ["_S"])
+    return " ".join(expand(grammar, ["_S"]))
 
 for i in range(0, 6): print generate_sentence(grammar)
 
