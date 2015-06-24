@@ -86,8 +86,8 @@ def farness(user):
 
 for user in users:
     user["closeness_centrality"] = 1 / farness(user)
-for user in users:
-    print user["closeness_centrality"]
+# for user in users:
+    # print user["closeness_centrality"]
 
 def matrix_product_entry(A, B, i, j):
     return dot(get_row(A, i), get_column(B, j))
@@ -125,3 +125,45 @@ def find_eigenvector(A, tolerance=0.00001):
             return next_guess, length # eigenvector, eigenvalue
         
         guess = next_guess
+
+def entry_fn(i, j):
+    return 1 if (i, j) in friendships or (j, i) in friendships else 0
+
+n = len(users)
+adjacency_matrix = make_matrix(n, n, entry_fn)
+
+#
+# directed graphs
+#
+
+endorsements = [(0, 1), (1, 0), (0, 2), (2, 0), (1, 2), (2, 1), (1, 3),
+                (2, 3), (3, 4), (5, 4), (5, 6), (7, 5), (6, 8), (8, 7), (8, 9)]
+
+for user in users:
+    user["endorses"] = []
+    user["endorsed_by"] = []
+
+for source_id, target_id in endorsements:
+    users[source_id]["endorses"].append(users[target_id])
+    users[target_id]["endorsed_by"].append(users[source_id])
+
+endorsements_by_id = [(user["id"], len(user["endorsed_by"])) for user in users]
+
+sorted(endorsements_by_id, key=lambda (user_id, num_endorsements): num_endorsements, reverse = True)
+
+def page_rank(users, damping=0.85, num_iters = 100):
+    num_users = len(users)
+    pr = { user["id"]: 1 / num_users for user in users }
+
+    base_pr = (1 - damping) / num_users
+
+    for _ in range(num_iters):
+        next_pr = { user["id"]: base_pr for user in users }
+        for user in users:
+            links_pr = pr[user["id"]] * damping
+            for endorsee in user["endorses"]:
+                next_pr[endorsee["id"]] += links_pr / len(user["endorses"])
+        pr = next_pr
+    return pr
+
+print page_rank(users)
